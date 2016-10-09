@@ -22,12 +22,13 @@ class CameraMotionPlugin
     this.pipe.setReader(this.onPipeRead.bind(this));
 
     this.motionService = new Service.MotionSensor(this.name);
+    this.setMotion(false);
+  }
 
+  setMotion(detected) {
     this.motionService
       .getCharacteristic(Characteristic.MotionDetected)
-      .setValue(false);
-    // TODO: notify?!
-    // TODO: change value on motion detected event
+      .setValue(detected);
   }
 
   onPipeRead(text) {
@@ -46,9 +47,9 @@ class CameraMotionPlugin
     const [filename, filetype, event, width, height, x, y, noise, dpixels] = text.trim().split('\t');
     console.log('filename is',filename);
 
-    this.motionService
-      .getCharacteristic(Characteristic.MotionDetected)
-      .setValue(true);
+    this.setMotion(true);
+
+    setTimeout(() => this.setMotion(false), 2000); // TODO: ?
   }
 
   getServices() {
