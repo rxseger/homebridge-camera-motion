@@ -1,0 +1,28 @@
+{
+  "name": "homebridge-camera-motion",
+  "version": "0.0.0",
+  "description": "Motion detector camera plugin for Homebridge",
+  "main": "camera-motion.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/rxseger/homebridge-camera-motion.git"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "camera",
+    "motion"
+  ],
+  "author": "rxserger",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rxseger/homebridge-camera-motion/issues"
+  },
+  "engines": {
+    "node": ">=6.0.0",
+    "homebridge": ">=0.2.0"
+  },
+  "homepage": "https://github.com/rxseger/homebridge-camera-motion#readme"
+}
