@@ -2,20 +2,24 @@
 
 const FIFO = require('fifo-js');
 
-let Service, Characteristic;
+let Service, Characteristic, UUIDGen;
 
 module.exports = (homebridge) => {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
+  UUIDGen = homebridge.hap.uuid;
 
-  homebridge.registerAccessory('homebridge-camera-motion', 'CameraMotion', CameraMotionPlugin);
+  homebridge.registerPlatform('homebridge-camera-motion', 'CameraMotion', CameraMotionPlatform, true);
+  //homebridge.registerAccessory('homebridge-camera-motion', 'CameraMotion', CameraMotionPlugin);
 };
 
-class CameraMotionPlugin
+class CameraMotionPlatform
 {
-  constructor(log, config) {
+  constructor(log, config, api) {
+    log(`CameraMotion Platform Plugin starting`);
     this.log = log;
-    this.name = config.name;
+    config = config || {};
+    this.name = config.name || 'CameraMotionPlatform';
 
     this.pipePath = config.pipePath || '/tmp/camera-pipe';
     this.timeout = config.timeout !== undefined ? config.timeout : 2000;
@@ -25,6 +29,7 @@ class CameraMotionPlugin
 
     this.motionService = new Service.MotionSensor(this.name);
     this.setMotion(false);
+
   }
 
   setMotion(detected) {
@@ -57,5 +62,8 @@ class CameraMotionPlugin
   getServices() {
     return [this.motionService];
   }
-}
 
+  accessories(cb) {
+    cb([this]);
+  }
+}

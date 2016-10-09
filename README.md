@@ -22,12 +22,10 @@ on_picture_save printf '%f\t%n\t%v\t%i\t%J\t%K\t%L\t%N\t%D\n' > /tmp/camera-pipe
 Example configuration:
 
 ```json
-    "accessories": [
+    "platforms": [
         {
-            "accessory": "CameraMotion",
-            "name": "Window",
-            "pipePath": "/tmp/camera-pipe",
-            "timeout": 2000
+                "platform": "CameraMotion",
+                "name": "Window"
         }
     ]
 ```
