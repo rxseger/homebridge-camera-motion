@@ -24,5 +24,8 @@
     "node": ">=6.0.0",
     "homebridge": ">=0.2.0"
   },
-  "homepage": "https://github.com/rxseger/homebridge-camera-motion#readme"
+  "homepage": "https://github.com/rxseger/homebridge-camera-motion#readme",
+  "dependencies": {
+    "fifo-js": "^2.1.0"
+  }
 }
