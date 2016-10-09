@@ -18,6 +18,8 @@ class CameraMotionPlugin
     this.name = config.name;
 
     this.pipePath = config.pipePath || '/tmp/camera-pipe';
+    this.timeout = config.timeout !== undefined ? config.timeout : 2000;
+
     this.pipe = new FIFO(this.pipePath);
     this.pipe.setReader(this.onPipeRead.bind(this));
 
@@ -49,7 +51,7 @@ class CameraMotionPlugin
 
     this.setMotion(true);
 
-    setTimeout(() => this.setMotion(false), 2000); // TODO: ?
+    setTimeout(() => this.setMotion(false), this.timeout); // TODO: is this how this works?
   }
 
   getServices() {

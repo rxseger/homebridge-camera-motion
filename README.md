@@ -17,6 +17,7 @@ on_picture_save printf '%f\t%n\t%v\t%i\t%J\t%K\t%L\t%N\t%D\n' > /tmp/camera-pipe
 * `name`: descriptive name
 * `pipePath`: path to a [Unix named pipe](https://en.wikipedia.org/wiki/Named_pipe) to communicate with the camera
 (will be created if needed, must match output file pipe written to by Motion on_picture_save)
+* `timeout`: reset the motion detector after this many milliseconds
 
 Example configuration:
 
@@ -25,7 +26,8 @@ Example configuration:
         {
             "accessory": "CameraMotion",
             "name": "Window",
-            "pipePath": "/tmp/camera-pipe"
+            "pipePath": "/tmp/camera-pipe",
+            "timeout": 2000
         }
     ]
 ```
