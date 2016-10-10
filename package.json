@@ -1,6 +1,6 @@
 {
   "name": "homebridge-camera-motion",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Motion detector camera plugin for Homebridge",
   "main": "camera-motion.js",
   "scripts": {
