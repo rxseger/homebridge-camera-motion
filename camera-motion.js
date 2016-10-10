@@ -2,13 +2,14 @@
 
 const fs = require('fs');
 const FIFO = require('fifo-js');
+const spawn = require('child_process').spawn;
 
-let Service, Characteristic, UUIDGen, StreamController, Accessory, hap;
+let Service, Characteristic, uuid, StreamController, Accessory, hap;
 
 module.exports = (homebridge) => {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
-  UUIDGen = homebridge.hap.uuid;
+  uuid = homebridge.hap.uuid;
   StreamController = homebridge.hap.StreamController;
   Accessory = homebridge.platformAccessory;
   hap = homebridge.hap;
@@ -19,11 +20,12 @@ module.exports = (homebridge) => {
 class CameraMotionPlatform
 {
   constructor(log, config, api) {
-    log(`CameraMotion Platform Plugin starting`);
+    log(`CameraMotion Platform Plugin starting`,config);
     this.log = log;
     this.api = api;
-    config = config || {};
-    this.name = config.name || 'CameraMotionPlatform';
+    this.config = config;
+    if (!config) return; // TODO: what gives with initializing platforms twice, once with config once without?
+    this.name = config.name || 'Camera';
 
     this.motionAccessory = new CameraMotionAccessory(log, config, api);
 
@@ -38,17 +40,18 @@ class CameraMotionPlatform
     if (global._mcp_launched) return; // call only once
     global._mcp_launched = true; // TODO: really, why is this called twice? from where?
 
-    const cameraName = 'Camera1';
-    const uuid = UUIDGen.generate(cameraName);
-    console.log('uuid=',uuid);
-    const cameraAccessory = new Accessory(cameraName, uuid, hap.Accessory.Categories.CAMERA);
-    cameraAccessory.configureCameraSource(new CameraMotionSource(hap));
+    const cameraName = this.name;
+    const uu = uuid.generate(cameraName);
+    console.log('uuid=',uu);
+    const cameraAccessory = new Accessory(cameraName, uu, hap.Accessory.Categories.CAMERA);
+    cameraAccessory.configureCameraSource(new CameraSource(hap, this.config));
     const configuredAccessories = [cameraAccessory];
     this.api.publishCameraAccessories('CameraMotion', configuredAccessories);
     this.log(`published camera`);
   }
 }
 
+// An accessory with a MotionSensor service
 class CameraMotionAccessory
 {
   constructor(log, config, api) {
@@ -56,10 +59,10 @@ class CameraMotionAccessory
     this.log = log;
     this.api = api;
     config = config || {};
-    this.name = config.name || 'CameraMotionAccessory';
+    this.name = config.name_motion || 'Motion Detector';
 
-    this.pipePath = config.pipePath || '/tmp/camera-pipe';
-    this.timeout = config.timeout !== undefined ? config.timeout : 2000;
+    this.pipePath = config.motion_pipe || '/tmp/motion-pipe';
+    this.timeout = config.motion_timeout !== undefined ? config.motion_timeout : 2000;
 
     this.pipe = new FIFO(this.pipePath);
     this.pipe.setReader(this.onPipeRead.bind(this));
@@ -100,17 +103,25 @@ class CameraMotionAccessory
   }
 }
 
-class CameraMotionSource
+// Source for the camera images
+class CameraSource
 {
-  constructor(hap) {
+  constructor(hap, config) {
     this.hap = hap;
+    this.config = config;
+    this.snapshot_path = config.snapshot_path || '/tmp/lastsnap.jpg'; // in target_dir
+    this.ffmpeg_path = config.ffmpeg_path || false;
+    this.ffmpegSource = config.ffmpeg_source;
+
+    this.pendingSessions = {};
+    this.ongoingSessions = {};
 
     this.services = []; // TODO: where is this used?
 
     // Create control service
     this.controlService = new Service.CameraControl();
 
-    // Create stream controller(s) (only one for now TODO: more)
+    // Create stream controller(s) (only one for now TODO: more?)
 
     const videoResolutions = [
         // width, height, fps
@@ -213,14 +224,67 @@ class CameraMotionSource
     }
   }
 
+  // also based on homebridge-camera-ffmpeg!
   handleStreamRequest(request) {
-    console.log('TODO: handleStreamRequest',request);
+    if (!this.ffmpeg_path) {
+      console.log(`No ffmpeg_path set, ignoring handleStreamRequest`,request);
+      return;
+    }
+    console.log('received handleStreamRequest',request);
+
+    var sessionID = request["sessionID"];
+    var requestType = request["type"];
+    if (sessionID) {
+      let sessionIdentifier = uuid.unparse(sessionID);
+  
+      if (requestType == "start") {
+        var sessionInfo = this.pendingSessions[sessionIdentifier];
+        console.log('starting',sessionInfo);
+        if (sessionInfo) {
+          var width = 1280;
+          var height = 720;
+          var fps = 30;
+          var bitrate = 300;
+  
+          let videoInfo = request["video"];
+          if (videoInfo) {
+            width = videoInfo["width"];
+            height = videoInfo["height"];
+  
+            let expectedFPS = videoInfo["fps"];
+            if (expectedFPS < fps) {
+              fps = expectedFPS;
+            }
+  
+            bitrate = videoInfo["max_bit_rate"];
+          }
+  
+          let targetAddress = sessionInfo["address"];
+          let targetVideoPort = sessionInfo["video_port"];
+          let videoKey = sessionInfo["video_srtp"];
+  
+          let ffmpegCommand = this.ffmpegSource + ' -threads 0 -vcodec libx264 -an -pix_fmt yuv420p -r '+ fps +' -f rawvideo -tune zerolatency -vf scale='+ width +':'+ height +' -b:v '+ bitrate +'k -bufsize '+ bitrate +'k -payload_type 99 -ssrc 1 -f rtp -srtp_out_suite AES_CM_128_HMAC_SHA1_80 -srtp_out_params '+videoKey.toString('base64')+' srtp://'+targetAddress+':'+targetVideoPort+'?rtcpport='+targetVideoPort+'&localrtcpport='+targetVideoPort+'&pkt_size=1378';
+          console.log('about to spawn ffmpeg');
+          console.log(ffmpegCommand);
+          let ffmpeg = spawn(this.ffmpeg_path, ffmpegCommand.split(' '), {env: process.env});
+          this.ongoingSessions[sessionIdentifier] = ffmpeg;
+        }
+  
+        delete this.pendingSessions[sessionIdentifier];
+      } else if (requestType == "stop") {
+        var ffmpegProcess = this.ongoingSessions[sessionIdentifier];
+        if (ffmpegProcess) {
+          ffmpegProcess.kill('SIGKILL');
+        }
+  
+        delete this.ongoingSessions[sessionIdentifier];
+      }
+    }
   }
 
   handleSnapshotRequest(request, cb) {
     console.log('handleSnapshotRequest',request);
-    const filename = '/tmp/lastsnap.jpg'; // TODO: configurable target_dir
-    fs.readFile('/tmp/lastsnap.jpg', (err, data) => {
+    fs.readFile(this.snapshot_path, (err, data) => {
       if (err) return cb(err);
 
       // TODO: scale to requested dimensions
