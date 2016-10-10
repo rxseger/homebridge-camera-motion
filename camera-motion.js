@@ -161,8 +161,56 @@ class CameraMotionSource
     this.streamController.handleCloseConnection(connectionID);
   }
 
+  // stolen from https://github.com/KhaosT/homebridge-camera-ffmpeg/blob/master/ffmpeg.js TODO: why can't this be in homebridge itself?
   prepareStream(request, cb) {
-    cb(new Error('not yet supported TODO prepareStream'));
+    var sessionInfo = {};
+  
+    let sessionID = request["sessionID"];
+    let targetAddress = request["targetAddress"];
+  
+    sessionInfo["address"] = targetAddress;
+  
+    var response = {};
+  
+    let videoInfo = request["video"];
+    if (videoInfo) {
+      let targetPort = videoInfo["port"];
+      let srtp_key = videoInfo["srtp_key"];
+      let srtp_salt = videoInfo["srtp_salt"];
+  
+      let videoResp = {
+        port: targetPort,
+        ssrc: 1,
+        srtp_key: srtp_key,
+        srtp_salt: srtp_salt
+      };
+  
+      response["video"] = videoResp;
+  
+      sessionInfo["video_port"] = targetPort;
+      sessionInfo["video_srtp"] = Buffer.concat([srtp_key, srtp_salt]);
+      sessionInfo["video_ssrc"] = 1; 
+    }
+  
+    let audioInfo = request["audio"];
+    if (audioInfo) {
+      let targetPort = audioInfo["port"];
+      let srtp_key = audioInfo["srtp_key"];
+      let srtp_salt = audioInfo["srtp_salt"];
+  
+      let audioResp = {
+        port: targetPort,
+        ssrc: 1,
+        srtp_key: srtp_key,
+        srtp_salt: srtp_salt
+      };
+  
+      response["audio"] = audioResp;
+  
+      sessionInfo["audio_port"] = targetPort;
+      sessionInfo["audio_srtp"] = Buffer.concat([srtp_key, srtp_salt]);
+      sessionInfo["audio_ssrc"] = 1; 
+    }
   }
 
   handleStreamRequest(request) {
