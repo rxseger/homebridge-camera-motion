@@ -2,12 +2,13 @@
 
 const FIFO = require('fifo-js');
 
-let Service, Characteristic, UUIDGen, Accessory, hap;
+let Service, Characteristic, UUIDGen, StreamController, Accessory, hap;
 
 module.exports = (homebridge) => {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   UUIDGen = homebridge.hap.uuid;
+  StreamController = homebridge.hap.StreamController;
   Accessory = homebridge.platformAccessory;
   hap = homebridge.hap;
 
@@ -40,7 +41,7 @@ class CameraMotionPlatform
     const uuid = UUIDGen.generate(cameraName);
     console.log('uuid=',uuid);
     const cameraAccessory = new Accessory(cameraName, uuid, hap.Accessory.Categories.CAMERA);
-    //cameraAccessory.configureCameraSource(new CameraMotionSource(hap));
+    cameraAccessory.configureCameraSource(new CameraMotionSource(hap));
     const configuredAccessories = [cameraAccessory];
     this.api.publishCameraAccessories('CameraMotion', configuredAccessories);
     this.log(`published camera`);
@@ -97,3 +98,79 @@ class CameraMotionAccessory
     return [this.motionService];
   }
 }
+
+class CameraMotionSource
+{
+  constructor(hap) {
+    this.hap = hap;
+
+    this.services = []; // TODO: where is this used?
+
+    // Create control service
+    this.controlService = new Service.CameraControl();
+
+    // Create stream controller(s) (only one for now TODO: more)
+
+    const videoResolutions = [
+        // width, height, fps
+        [1920, 1080, 30],
+        [320, 240, 15],
+        [1280, 960, 30],
+        [1280, 720, 30],
+        [1024, 768, 30],
+        [640, 480, 30],
+        [640, 360, 30],
+        [480, 360, 30],
+        [480, 270, 30],
+        [320, 240, 30],
+        [320, 180, 30],
+   ];
+
+   // see https://github.com/KhaosT/homebridge-camera-ffmpeg/blob/master/ffmpeg.js
+   const options = {
+     proxy: false, // Requires RTP/RTCP MUX Proxy
+     srtp: true, // Supports SRTP AES_CM_128_HMAC_SHA1_80 encryption
+     video: {
+       resolutions: videoResolutions,
+       codec: {
+         profiles: [0, 1, 2], // Enum, please refer StreamController.VideoCodecParamProfileIDTypes
+         levels: [0, 1, 2] // Enum, please refer StreamController.VideoCodecParamLevelTypes
+       }
+     },
+     audio: {
+       codecs: [
+         {
+           type: "OPUS", // Audio Codec
+           samplerate: 24 // 8, 16, 24 KHz
+         },
+         {
+           type: "AAC-eld",
+           samplerate: 16
+         }
+       ]
+     }
+   };
+
+
+   this.streamController = new StreamController(0, options, this);
+   this.services.push(this.streamController.service);
+  }
+
+  handleCloseConnection(connectionID) {
+    this.streamController.handleCloseConnection(connectionID);
+  }
+
+  prepareStream(request, cb) {
+    cb(new Error('not yet supported TODO prepareStream'));
+  }
+
+  handleStreamRequest(request) {
+    console.log('TODO: handleStreamRequest',request);
+  }
+
+  handleSnapshotRequest(request, cb) {
+    console.log('handleSnapshotRequest',request);
+    cb(new Error(`TODO: handleSnapshotRequest`)); 
+  }
+}
+
