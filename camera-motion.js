@@ -33,14 +33,17 @@ class CameraMotionPlatform
   }
 
   didFinishLaunching() {
+    if (global._mcp_launched) return; // call only once
+    global._mcp_launched = true; // TODO: really, why is this called twice? from where?
+
     const cameraName = 'Camera1';
     const uuid = UUIDGen.generate(cameraName);
     console.log('uuid=',uuid);
     const cameraAccessory = new Accessory(cameraName, uuid, hap.Accessory.Categories.CAMERA);
     //cameraAccessory.configureCameraSource(new CameraMotionSource(hap));
     const configuredAccessories = [cameraAccessory];
-    //TODO this.api.publishCameraAccessories('CameraMotion', configuredAccessories);
-    //this.log(`published camera`);
+    this.api.publishCameraAccessories('CameraMotion', configuredAccessories);
+    this.log(`published camera`);
   }
 }
 
