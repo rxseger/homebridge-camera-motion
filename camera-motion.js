@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const FIFO = require('fifo-js');
 
 let Service, Characteristic, UUIDGen, StreamController, Accessory, hap;
@@ -170,7 +171,13 @@ class CameraMotionSource
 
   handleSnapshotRequest(request, cb) {
     console.log('handleSnapshotRequest',request);
-    cb(new Error(`TODO: handleSnapshotRequest`)); 
+    const filename = '/tmp/lastsnap.jpg'; // TODO: configurable target_dir
+    fs.readFile('/tmp/lastsnap.jpg', (err, data) => {
+      if (err) return cb(err);
+
+      // TODO: scale to requested dimensions
+      cb(null, data);
+    });
   }
 }
 
