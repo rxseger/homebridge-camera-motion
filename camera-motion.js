@@ -2,15 +2,16 @@
 
 const FIFO = require('fifo-js');
 
-let Service, Characteristic, UUIDGen;
+let Service, Characteristic, UUIDGen, Accessory, hap;
 
 module.exports = (homebridge) => {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   UUIDGen = homebridge.hap.uuid;
+  Accessory = homebridge.platformAccessory;
+  hap = homebridge.hap;
 
   homebridge.registerPlatform('homebridge-camera-motion', 'CameraMotion', CameraMotionPlatform, true);
-  //homebridge.registerAccessory('homebridge-camera-motion', 'CameraMotion', CameraMotionPlugin);
 };
 
 class CameraMotionPlatform
@@ -18,8 +19,39 @@ class CameraMotionPlatform
   constructor(log, config, api) {
     log(`CameraMotion Platform Plugin starting`);
     this.log = log;
+    this.api = api;
     config = config || {};
     this.name = config.name || 'CameraMotionPlatform';
+
+    this.motionAccessory = new CameraMotionAccessory(log, config, api);
+
+    this.api.on('didFinishLaunching', this.didFinishLaunching.bind(this));
+  }
+
+  accessories(cb) {
+    cb([this.motionAccessory]);
+  }
+
+  didFinishLaunching() {
+    const cameraName = 'Camera1';
+    const uuid = UUIDGen.generate(cameraName);
+    console.log('uuid=',uuid);
+    const cameraAccessory = new Accessory(cameraName, uuid, hap.Accessory.Categories.CAMERA);
+    //cameraAccessory.configureCameraSource(new CameraMotionSource(hap));
+    const configuredAccessories = [cameraAccessory];
+    //TODO this.api.publishCameraAccessories('CameraMotion', configuredAccessories);
+    //this.log(`published camera`);
+  }
+}
+
+class CameraMotionAccessory
+{
+  constructor(log, config, api) {
+    log(`CameraMotion accessory starting`);
+    this.log = log;
+    this.api = api;
+    config = config || {};
+    this.name = config.name || 'CameraMotionAccessory';
 
     this.pipePath = config.pipePath || '/tmp/camera-pipe';
     this.timeout = config.timeout !== undefined ? config.timeout : 2000;
@@ -29,7 +61,6 @@ class CameraMotionPlatform
 
     this.motionService = new Service.MotionSensor(this.name);
     this.setMotion(false);
-
   }
 
   setMotion(detected) {
@@ -61,9 +92,5 @@ class CameraMotionPlatform
 
   getServices() {
     return [this.motionService];
-  }
-
-  accessories(cb) {
-    cb([this]);
   }
 }
