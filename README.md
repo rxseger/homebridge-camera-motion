@@ -32,19 +32,22 @@ Example configuration:
 ```json
     "platforms": [
         {
-                "platform": "CameraMotion",
-                "name": "Camera",
+        "platform": "CameraMotion",
+        "name": "Camera",
 		"name_motion": "Motion Sensor",
 		"motion_pipe": "/tmp/motion-pipe",
 		"motion_timeout": 2000,
 		"snapshot_path": "/tmp/lastsnap.jpg"
+        "ffmpeg_path": "/usr/local/bin/ffmpeg",
+        "ffmpeg_source": "-re -i http://192.168.1.100:8081/"
         }
     ]
 ```
 
 Creates a MotionSensor service and CameraSensor service.
 
-Currently working: snapshots (still images) and motion detection. Video streaming requires more work (partially implemented but appears broken, needs more investigation).
+Currently working: snapshots (still images) and motion detection.
+Video streaming
 
 ## License
 
