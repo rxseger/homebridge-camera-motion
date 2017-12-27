@@ -23,7 +23,6 @@ target_dir /tmp
 * `name_motion`: name of MotionDetector service
 * `motion_pipe`: path to a [Unix named pipe](https://en.wikipedia.org/wiki/Named_pipe) where motion events are written (will be created if needed, should match output file pipe written to by Motion `on_picture_save`)
 * `motion_timeout`: reset the motion detector after this many milliseconds
-* `snapshot_path`: path of latest snapshot, should match `target_dir` + '/lastsnap.jpg`
 * `ffmpeg_path`: path to ffmpeg for streaming (optional)
 * `ffmpeg_source`: URL to stream source, should match as configured by motion
 
@@ -37,7 +36,6 @@ Example configuration:
 		"name_motion": "Motion Sensor",
 		"motion_pipe": "/tmp/motion-pipe",
 		"motion_timeout": 2000,
-		"snapshot_path": "/tmp/lastsnap.jpg"
         }
     ]
 ```
