@@ -44,7 +44,9 @@ class CameraMotionPlatform
     const uu = uuid.generate(cameraName);
     console.log('uuid=',uu);
     const cameraAccessory = new Accessory(cameraName, uu, hap.Accessory.Categories.CAMERA);
-    cameraAccessory.configureCameraSource(new CameraSource(hap, this.config));
+    this.cameraSource = new CameraSource(hap, this.config);
+    cameraAccessory.configureCameraSource(this.cameraSource);
+    this.motionAccessory.setSource(this.cameraSource);
     const configuredAccessories = [cameraAccessory];
     this.api.publishCameraAccessories('CameraMotion', configuredAccessories);
     this.log(`published camera`);
@@ -71,6 +73,10 @@ class CameraMotionAccessory
     this.setMotion(false);
   }
 
+  setSource(cameraSource) {
+    this.cameraSource = cameraSource;
+  }
+
   setMotion(detected) {
     this.motionService
       .getCharacteristic(Characteristic.MotionDetected)
@@ -92,7 +98,7 @@ class CameraMotionAccessory
     // %D changed pixels
     const [filename, filetype, event, width, height, x, y, noise, dpixels] = text.trim().split('\t');
     console.log('filename is',filename);
-
+    this.cameraSource.snapshot_path = filename;
     this.setMotion(true);
 
     setTimeout(() => this.setMotion(false), this.timeout); // TODO: is this how this works?
@@ -109,7 +115,7 @@ class CameraSource
   constructor(hap, config) {
     this.hap = hap;
     this.config = config;
-    this.snapshot_path = config.snapshot_path || '/tmp/lastsnap.jpg'; // in target_dir
+    this.snapshot_path = '/tmp/lastsnap.jpg'; // Will be reset by onPipeRead(...)
     this.ffmpeg_path = config.ffmpeg_path || false;
     this.ffmpegSource = config.ffmpeg_source;
 
@@ -135,7 +141,7 @@ class CameraSource
         [480, 360, 30],
         [480, 270, 30],
         [320, 240, 30],
-        [320, 180, 30],
+        [320, 180, 30]
    ];
 
    // see https://github.com/KhaosT/homebridge-camera-ffmpeg/blob/master/ffmpeg.js
