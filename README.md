@@ -35,7 +35,7 @@ Example configuration:
                 "name": "Camera",
 		"name_motion": "Motion Sensor",
 		"motion_pipe": "/tmp/motion-pipe",
-		"motion_timeout": 2000,
+		"motion_timeout": 2000
         }
     ]
 ```
