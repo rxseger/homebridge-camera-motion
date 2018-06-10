@@ -14,8 +14,26 @@ Add to your `~/.motion/motion.conf`:
 on_picture_save printf '%f\t%n\t%v\t%i\t%J\t%K\t%L\t%N\t%D\n' > /tmp/motion-pipe
 target_dir /tmp
 ```
+5.  Copy homebrige-fixfifo.sh to /home/pi/homebridge-fixfifo.sh and add /home/pi/homebridge-fixfifo.sh to your rc.local file :
+```
+$ cat /etc/rc.local
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
 
-5.	Pair to the camera (requires pairing separately from the rest of the Homebridge)
+/home/pi/homebridge-fixfifo.sh
+exit 0
+```
+6.	Pair to the camera (requires pairing separately from the rest of the Homebridge)
 
 ## Configuration
 * `accessory`: "CameraMotion"
@@ -31,18 +49,23 @@ Example configuration:
 ```json
     "platforms": [
         {
-                "platform": "CameraMotion",
-                "name": "Camera",
+        "platform": "CameraMotion",
+        "name": "Camera",
 		"name_motion": "Motion Sensor",
 		"motion_pipe": "/tmp/motion-pipe",
-		"motion_timeout": 2000
+		"motion_timeout": 2000,
+		"snapshot_path": "/tmp/lastsnap.jpg"
+        "ffmpeg_path": "/usr/local/bin/ffmpeg",
+        "ffmpeg_source": "-re -i http://192.168.1.100:8081/"
+
         }
     ]
 ```
 
 Creates a MotionSensor service and CameraSensor service.
 
-Currently working: snapshots (still images) and motion detection. Video streaming requires more work (partially implemented but appears broken, needs more investigation).
+Currently working: snapshots (still images) and motion detection.
+Video streaming
 
 ## License
 

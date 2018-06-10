@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const ip = require('ip');
 const FIFO = require('fifo-js');
 const spawn = require('child_process').spawn;
 
@@ -228,6 +229,24 @@ class CameraSource
       sessionInfo["audio_srtp"] = Buffer.concat([srtp_key, srtp_salt]);
       sessionInfo["audio_ssrc"] = 1; 
     }
+
+    let currentAddress = ip.address();
+    console.log('currentAddress',currentAddress);
+    var addressResp = {
+        address: currentAddress
+    };
+    console.log('addressResp',addressResp);
+
+    if (ip.isV4Format(currentAddress)) {
+        addressResp["type"] = "v4";
+    } else {
+        addressResp["type"] = "v6";
+    }
+
+    response["address"] = addressResp;
+
+    this.pendingSessions[uuid.unparse(sessionID)] = sessionInfo;
+    cb(response)
   }
 
   // also based on homebridge-camera-ffmpeg!
@@ -242,7 +261,7 @@ class CameraSource
     var requestType = request["type"];
     if (sessionID) {
       let sessionIdentifier = uuid.unparse(sessionID);
-  
+
       if (requestType == "start") {
         var sessionInfo = this.pendingSessions[sessionIdentifier];
         console.log('starting',sessionInfo);
