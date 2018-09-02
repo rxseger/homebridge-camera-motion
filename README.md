@@ -54,7 +54,7 @@ Example configuration:
 		"name_motion": "Motion Sensor",
 		"motion_pipe": "/tmp/motion-pipe",
 		"motion_timeout": 2000,
-		"snapshot_path": "/tmp/lastsnap.jpg"
+		"snapshot_path": "/tmp/lastsnap.jpg",
         "ffmpeg_path": "/usr/local/bin/ffmpeg",
         "ffmpeg_source": "-re -i http://192.168.1.100:8081/"
 
